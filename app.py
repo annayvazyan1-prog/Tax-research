@@ -1,12 +1,10 @@
-"""Streamlit UI for the multi-agent tax-research system, skinned to look like
-IRS.gov (irs.gov/retirement-plans/401k-plans).
+"""Streamlit UI for the multi-agent tax-research system.
+
+Warm, editorial design (sunset gold + charcoal + cream). The page is just the
+research tool: ask a question, get a verified, cited answer.
 
 Run:
     .venv/bin/streamlit run app.py
-
-The page chrome (gov banner, IRS header, nav, breadcrumb, sidebar) is static
-HTML/CSS recreated to match the screenshot. The main content area drives the
-existing LangGraph agent: type a question, get a verified, cited answer.
 """
 
 from __future__ import annotations
@@ -21,14 +19,16 @@ except ImportError:
 
 from src.graph import build_graph
 
-# --- IRS palette ---------------------------------------------------------
-HEADER_BLUE = "#2a5a91"
-NAV_NAVY = "#112e51"
-LINK_BLUE = "#0071bc"
-GOV_GRAY = "#f0f0f0"
+# --- Palette (from the warm home-decor reference) ------------------------
+GOLD = "#c98a3c"
+GOLD_DEEP = "#a8641e"
+INK = "#262220"
+CREAM = "#faf6f0"
+WARM_GRAY = "#6b6259"
+SAGE = "#7d8b6a"
 
-st.set_page_config(page_title="401(k) plans | Internal Revenue Service",
-                   page_icon="🇺🇸", layout="wide")
+st.set_page_config(page_title="Retirement Tax Research", page_icon="🪙",
+                   layout="wide")
 
 
 @st.cache_resource(show_spinner=False)
@@ -37,128 +37,102 @@ def get_graph():
     return build_graph()
 
 
-# --- Global CSS: strip Streamlit chrome, load fonts, define IRS classes ---
 st.markdown(
     f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Merriweather:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap');
 
     #MainMenu, footer, header[data-testid="stHeader"] {{ display: none; }}
-    [data-testid="stAppViewContainer"] {{ background: #fff; }}
+    [data-testid="stAppViewContainer"] {{ background: {CREAM}; }}
     .block-container {{ padding: 0 !important; max-width: 100% !important; }}
-    html, body, [class*="css"] {{ font-family: 'Public Sans', Arial, sans-serif; }}
+    html, body, [class*="css"] {{ font-family: 'Source Sans 3', Arial, sans-serif;
+        color: {INK}; }}
 
-    .gov-banner {{
-        background: {GOV_GRAY}; font-size: 12px; color: #1b1b1b;
-        padding: 6px 32px;
+    /* Hero */
+    .hero {{
+        background: linear-gradient(135deg, #e0a857 0%, {GOLD} 40%, {GOLD_DEEP} 100%);
+        padding: 64px 24px 70px; text-align: center; color: #fff;
     }}
-    .gov-banner a {{ color: {LINK_BLUE}; text-decoration: none; }}
+    .hero h1 {{ font-family: 'Playfair Display', Georgia, serif; font-weight: 700;
+        font-size: 52px; margin: 0; letter-spacing: .5px;
+        text-shadow: 0 1px 14px rgba(0,0,0,.18); }}
+    .hero p {{ font-size: 19px; margin: 14px auto 0; max-width: 640px;
+        opacity: .96; }}
 
-    .irs-header {{
-        background: {HEADER_BLUE}; color: #fff; padding: 18px 32px;
-        display: flex; align-items: center; justify-content: space-between;
-    }}
-    .irs-logo {{ font-size: 30px; font-weight: 700; letter-spacing: 1px;
-        font-family: 'Merriweather', Georgia, serif; }}
-    .irs-utility a {{ color: #fff; text-decoration: none; font-size: 14px;
-        margin-left: 22px; }}
+    /* Section label, like the reference's charcoal headers */
+    .label {{ font-size: 13px; font-weight: 700; letter-spacing: 2px;
+        text-transform: uppercase; color: {INK}; margin: 4px 0 10px; }}
+    .label::after {{ content: ""; display: block; width: 46px; height: 3px;
+        background: {GOLD}; margin-top: 7px; }}
 
-    .irs-nav {{
-        background: {NAV_NAVY}; padding: 0 32px; display: flex;
-        align-items: center; justify-content: space-between;
-    }}
-    .irs-nav .links a {{ color: #fff; text-decoration: none; font-size: 15px;
-        font-weight: 600; display: inline-block; padding: 16px 16px; }}
-    .irs-nav .links a:hover {{ background: {HEADER_BLUE}; }}
-    .irs-search {{ background: #fff; border: none; padding: 8px 12px;
-        width: 240px; font-size: 14px; }}
+    .lead {{ font-size: 18px; line-height: 1.65; color: {WARM_GRAY};
+        margin: 30px 0 18px; }}
 
-    .breadcrumb {{ padding: 18px 32px 0; font-size: 15px; color: #565c65; }}
-    .breadcrumb a {{ color: {LINK_BLUE}; text-decoration: none; }}
+    /* Result cards */
+    .answer-card {{ background: #fff; border: 1px solid #ece3d6;
+        border-left: 5px solid {GOLD}; border-radius: 6px;
+        padding: 26px 30px; margin-top: 8px; font-size: 16.5px;
+        line-height: 1.7; box-shadow: 0 6px 22px rgba(40,30,20,.06); }}
+    .answer-card h1, .answer-card h2, .answer-card h3 {{
+        font-family: 'Playfair Display', Georgia, serif; color: {INK}; }}
+    .answer-card table {{ border-collapse: collapse; margin: 10px 0; }}
+    .answer-card th, .answer-card td {{ border: 1px solid #e6ddd0;
+        padding: 6px 12px; }}
+    .answer-card th {{ background: {CREAM}; }}
+    .answer-card a {{ color: {GOLD_DEEP}; }}
 
-    .page-title {{ padding: 6px 32px 12px; font-size: 44px; font-weight: 700;
-        font-family: 'Merriweather', Georgia, serif; color: #1b1b1b; }}
+    .conflict-card {{ background: #fdf3ec; border-left: 5px solid #b5491f;
+        border-radius: 6px; padding: 16px 22px; margin-top: 18px;
+        font-size: 15px; color: #5c2a14; }}
 
-    .content-wrap {{ padding: 0 32px 48px; }}
+    .q-echo {{ font-family: 'Playfair Display', Georgia, serif;
+        font-size: 26px; color: {INK}; margin: 6px 0 14px; }}
 
-    .side-nav a {{ display: block; padding: 16px 4px; font-size: 17px;
-        font-weight: 700; color: #1b1b1b; text-decoration: none;
-        border-bottom: 1px solid #d6d7d9; }}
-    .side-nav a:first-child {{ border-top: 1px solid #d6d7d9; }}
-    .side-nav a:hover {{ color: {LINK_BLUE}; }}
+    /* Sources list — gold chevron rows like the reference */
+    .src {{ display: flex; gap: 12px; padding: 13px 4px; align-items: baseline;
+        border-bottom: 1px solid #e8dfd2; }}
+    .src .chev {{ color: {GOLD}; font-weight: 700; }}
+    .src a {{ color: {INK}; text-decoration: none; font-weight: 600; }}
+    .src a:hover {{ color: {GOLD_DEEP}; }}
+    .src .n {{ color: {WARM_GRAY}; font-size: 13px; }}
 
-    .lead {{ font-size: 17px; line-height: 1.6; color: #1b1b1b; }}
+    /* Inputs */
+    [data-testid="stTextInput"] input {{ background: #fff; border: 1px solid #ddd2c2;
+        border-radius: 6px; padding: 13px 16px; font-size: 16px; }}
+    [data-testid="stTextInput"] input:focus {{ border-color: {GOLD};
+        box-shadow: 0 0 0 2px rgba(201,138,60,.25); }}
+    div.stButton > button {{ background: {GOLD}; color: #fff; border: none;
+        border-radius: 6px; font-weight: 700; letter-spacing: .4px;
+        padding: 11px 34px; font-size: 16px; }}
+    div.stButton > button:hover {{ background: {GOLD_DEEP}; color: #fff; }}
 
-    .answer-box {{ border-left: 5px solid {HEADER_BLUE}; background: #f7f9fb;
-        padding: 16px 22px; margin-top: 8px; font-size: 16px; line-height: 1.6; }}
-    .conflict-box {{ border-left: 5px solid #d54309; background: #fff5f0;
-        padding: 12px 18px; margin-top: 16px; font-size: 15px; }}
-
-    div.stButton > button {{
-        background: {HEADER_BLUE}; color: #fff; border: none; border-radius: 0;
-        font-weight: 700; padding: 8px 26px; }}
-    div.stButton > button:hover {{ background: {NAV_NAVY}; color: #fff; }}
+    .tagline {{ color: {SAGE}; font-weight: 600; font-size: 14px;
+        margin-top: 26px; }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# --- Page chrome (static, matches the screenshot) ------------------------
+# --- Hero ----------------------------------------------------------------
 st.markdown(
     """
-    <div class="gov-banner">🇺🇸 An official website of the United States government &nbsp;
-        <a href="#">Here's how you know ⌄</a></div>
-
-    <div class="irs-header">
-        <div class="irs-logo">&#9670; IRS</div>
-        <div class="irs-utility">
-            <a href="#">Help</a><a href="#">News</a><a href="#">English ⌄</a>
-            <a href="#">Tax Pros</a><a href="#">Sign in</a>
-        </div>
+    <div class="hero">
+        <h1>Retirement Tax Research</h1>
+        <p>Verified, cited answers on current 401(k) and retirement tax rules —
+        researched across the web and cross-checked against authoritative IRS figures.</p>
     </div>
-
-    <div class="irs-nav">
-        <div class="links">
-            <a href="#">File</a><a href="#">Pay</a><a href="#">Refunds</a>
-            <a href="#">Credits &amp; Deductions</a><a href="#">Forms</a>
-            <a href="#">Report Fraud</a>
-        </div>
-        <input class="irs-search" placeholder="Search" />
-    </div>
-
-    <div class="breadcrumb">
-        <a href="#">Home</a> / <a href="#">Retirement Plans</a> / 401(k) plans
-    </div>
-    <div class="page-title">401(k) plans</div>
     """,
     unsafe_allow_html=True,
 )
 
-# --- Body: sidebar nav + main research area ------------------------------
-st.markdown('<div class="content-wrap">', unsafe_allow_html=True)
-side, main = st.columns([1, 3], gap="large")
-
-with side:
+# --- Centered content ----------------------------------------------------
+left, mid, right = st.columns([1, 2.4, 1])
+with mid:
+    st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="label">Ask a question</div>', unsafe_allow_html=True)
     st.markdown(
-        """
-        <div class="side-nav">
-            <a href="#">IRAs</a>
-            <a href="#">Types of retirement plans</a>
-            <a href="#">Required minimum distributions</a>
-            <a href="#">Published guidance</a>
-            <a href="#">Forms and publications</a>
-            <a href="#">Operate a retirement plan</a>
-            <a href="#">News</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with main:
-    st.markdown(
-        '<p class="lead">Ask about current 401(k) / retirement tax rules. '
-        'Answers are researched across the web, cross-checked against curated '
-        'IRS figures, and cited — no number is stated unless it verifies.</p>',
+        '<p class="lead">Type any question about current retirement or tax rules. '
+        'No figure is stated unless it verifies against the curated IRS knowledge base.</p>',
         unsafe_allow_html=True,
     )
 
@@ -167,33 +141,42 @@ with main:
         placeholder="What are the 2026 401(k) contribution limits and what changed from 2025?",
         label_visibility="collapsed",
     )
-    go = st.button("Search")
+    go = st.button("Research")
 
     if go:
         q = (question or "").strip() or (
             "What are the 2026 401(k) contribution limits and what changed from 2025?"
         )
-        with st.spinner("Researching, extracting claims, and verifying against IRS ground truth…"):
+        with st.spinner("Planning, searching, extracting claims, and verifying against IRS ground truth…"):
             final = get_graph().invoke({"question": q, "round": 0},
                                        config={"recursion_limit": 25})
 
-        st.markdown(f"### {q}")
+        st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="q-echo">{q}</div>', unsafe_allow_html=True)
         answer = final.get("answer") or "_(no answer produced)_"
-        st.markdown(f'<div class="answer-box">{answer}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="answer-card">{answer}</div>', unsafe_allow_html=True)
 
         conflicts = final.get("conflicts") or []
         if conflicts:
             items = "".join(f"<li>{c}</li>" for c in conflicts)
             st.markdown(
-                f'<div class="conflict-box"><b>⚠ Verification conflicts</b>'
-                f'<ul>{items}</ul></div>',
+                f'<div class="conflict-card"><b>⚠ Verification conflicts</b>'
+                f'<ul style="margin:6px 0 0">{items}</ul></div>',
                 unsafe_allow_html=True,
             )
 
         cites = final.get("citations") or []
         if cites:
-            st.markdown("#### Sources")
-            for i, c in enumerate(cites, 1):
-                st.markdown(f"{i}. [{c.title}]({c.url})")
+            st.markdown('<div style="height:26px"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="label">Sources</div>', unsafe_allow_html=True)
+            rows = "".join(
+                f'<div class="src"><span class="chev">›</span>'
+                f'<span><a href="{c.url}" target="_blank">{c.title or c.url}</a>'
+                f'<br><span class="n">{c.url}</span></span></div>'
+                for c in cites
+            )
+            st.markdown(rows, unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tagline">Research tooling — not financial, tax, or legal advice.</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div style="height:60px"></div>', unsafe_allow_html=True)
