@@ -4,3 +4,4 @@ langchain-anthropic>=0.2
 langchain-openai>=0.2
 tavily-python>=0.5
 python-dotenv>=1.0
+streamlit>=1.30
