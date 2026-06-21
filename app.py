@@ -146,8 +146,8 @@ st.markdown(
     """
     <div class="hero">
         <h1>Retirement Tax Research</h1>
-        <p>Verified, cited answers on current 401(k) and retirement tax rules —
-        researched across the web and cross-checked against authoritative IRS figures.</p>
+        <p>Cited research on current 401(k) and retirement tax rules — drawn from the web
+        and checked against IRS figures. Informational only; confirm with a tax professional.</p>
     </div>
     """,
     unsafe_allow_html=True,
