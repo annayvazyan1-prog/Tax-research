@@ -9,13 +9,41 @@ Run:
 
 from __future__ import annotations
 
+import os
+
 import streamlit as st
 
+# Local dev loads keys from .env. On Streamlit Cloud there is no .env — keys
+# come from the app's Secrets (Manage app → Settings → Secrets) via st.secrets.
+# Bridge whichever is present into the environment so the provider SDKs
+# (Anthropic / OpenAI / Tavily) can authenticate.
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
+
+REQUIRED_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "TAVILY_API_KEY")
+
+
+def _bridge_secrets() -> list[str]:
+    """Pull required keys from st.secrets into os.environ; return any missing."""
+    missing: list[str] = []
+    for key in REQUIRED_KEYS:
+        if os.environ.get(key):
+            continue
+        try:
+            val = st.secrets[key]
+        except Exception:
+            val = None
+        if val:
+            os.environ[key] = str(val)
+        else:
+            missing.append(key)
+    return missing
+
+
+MISSING_KEYS = _bridge_secrets()
 
 from src.graph import build_graph
 
@@ -136,23 +164,57 @@ with mid:
         unsafe_allow_html=True,
     )
 
+    # Track whether a research run is in flight and the last result, so the
+    # button can be disabled *only* while running and re-enabled when done —
+    # and so the rendered answer survives Streamlit's reruns.
+    st.session_state.setdefault("running", False)
+    st.session_state.setdefault("result", None)
+
+    def _start_research():
+        st.session_state.running = True
+
     question = st.text_input(
         "Your question",
         placeholder="What are the 2026 401(k) contribution limits and what changed from 2025?",
         label_visibility="collapsed",
+        disabled=st.session_state.running,
     )
-    go = st.button("Research")
+    st.button(
+        "Researching…" if st.session_state.running else "Research",
+        disabled=st.session_state.running,
+        on_click=_start_research,
+    )
 
-    if go:
-        q = (question or "").strip() or (
-            "What are the 2026 401(k) contribution limits and what changed from 2025?"
-        )
-        with st.spinner("Planning, searching, extracting claims, and verifying against IRS ground truth…"):
-            final = get_graph().invoke({"question": q, "round": 0},
-                                       config={"recursion_limit": 25})
+    # This block runs on the rerun triggered by the click: the button is now
+    # disabled, we do the work, store the result, re-enable, and rerun.
+    if st.session_state.running:
+        if MISSING_KEYS:
+            st.error(
+                "Missing API key(s): **" + ", ".join(MISSING_KEYS) + "**.\n\n"
+                "On Streamlit Cloud, open **Manage app → Settings → Secrets** and add them "
+                "in TOML form:\n\n```toml\n"
+                'ANTHROPIC_API_KEY = "sk-ant-..."\n'
+                'OPENAI_API_KEY = "sk-..."\n'
+                'TAVILY_API_KEY = "tvly-..."\n```\n\n'
+                "Locally, put the same keys in a `.env` file."
+            )
+            st.session_state.running = False
+        else:
+            q = (question or "").strip() or (
+                "What are the 2026 401(k) contribution limits and what changed from 2025?"
+            )
+            with st.spinner("Planning, searching, extracting claims, and verifying against IRS ground truth…"):
+                final = get_graph().invoke({"question": q, "round": 0},
+                                           config={"recursion_limit": 25})
+            st.session_state.result = {"question": q, "final": final}
+            st.session_state.running = False
+            st.rerun()
 
+    result = st.session_state.result
+    if result:
+        final = result["final"]
         st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="q-echo">{q}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="q-echo">{result["question"]}</div>', unsafe_allow_html=True)
         answer = final.get("answer") or "_(no answer produced)_"
         st.markdown(f'<div class="answer-card">{answer}</div>', unsafe_allow_html=True)
 
