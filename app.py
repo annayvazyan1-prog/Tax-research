@@ -146,7 +146,7 @@ st.markdown(
     """
     <div class="hero">
         <h1>Retirement Tax Research</h1>
-        <p>Cited research on current 401(k) and retirement tax rules — drawn from the web
+        <p>Cited research on current 401(k) and retirement tax rules, drawn from the web
         and checked against IRS figures. Informational only; confirm with a tax professional.</p>
     </div>
     """,
@@ -239,6 +239,6 @@ with mid:
             )
             st.markdown(rows, unsafe_allow_html=True)
 
-    st.markdown('<div class="tagline">Research tooling — not financial, tax, or legal advice.</div>',
+    st.markdown('<div class="tagline">Research tooling. Not financial, tax, or legal advice.</div>',
                 unsafe_allow_html=True)
     st.markdown('<div style="height:60px"></div>', unsafe_allow_html=True)
